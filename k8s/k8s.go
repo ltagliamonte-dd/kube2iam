@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"time"
 
+	kubelet "github.com/wish/katalog-sync/pkg/daemon"
+
 	"github.com/jtblin/kube2iam"
 	"github.com/jtblin/kube2iam/metrics"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	selector "k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -135,9 +136,12 @@ func (k8s *Client) PodByIP(IP string) (*v1.Pod, error) {
 // If we retrive a running pod that doesn't have HostNetwork = true and it is in Running state will return that.
 func getPodFromAPIByIP(k8s *Client, IP string) (*v1.Pod, error) {
 	log.Infof("getPodFromAPIByIP: Searching IP %s for: spec.nodeName==%s", IP, k8s.nodeName)
-	runningPodList, err := k8s.CoreV1().Pods("").List(metav1.ListOptions{
-		FieldSelector: "spec.nodeName=" + k8s.nodeName,
-	})
+	kubeletClient, err := kubelet.NewKubeletClient(kubelet.KubeletClientConfig{})
+	if err != nil {
+		log.Errorf("Unable to create kubelet client: %v", err)
+	}
+
+	runningPodList, err := kubeletClient.GetPodList()
 	metrics.K8sAPIReqCount.Inc()
 	if err != nil {
 		errMsg := fmt.Errorf("getPodFromAPIByIP: Error retriving the pod with IP %s from the k8s api", IP)
