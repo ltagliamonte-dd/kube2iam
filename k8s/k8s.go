@@ -135,7 +135,7 @@ func (k8s *Client) PodByIP(IP string) (*v1.Pod, error) {
 // If the indexed pods all have HostNetwork = true the function return nil and the error message.
 // If we retrive a running pod that doesn't have HostNetwork = true and it is in Running state will return that.
 func getPodFromAPIByIP(k8s *Client, IP string) (*v1.Pod, error) {
-	log.Infof("getPodFromAPIByIP: Searching IP %s for: spec.nodeName==%s", IP, k8s.nodeName)
+	log.Infof("getPodFromAPIByIP: kubelet Searching IP %s for: spec.nodeName==%s", IP, k8s.nodeName)
 	kubeletClient, err := kubelet.NewKubeletClient(kubelet.KubeletClientConfig{APIEndpoint: "http://localhost:10255/pods", InsecureSkipVerify: true})
 	if err != nil {
 		log.Errorf("Unable to create kubelet client: %v", err)
@@ -144,18 +144,18 @@ func getPodFromAPIByIP(k8s *Client, IP string) (*v1.Pod, error) {
 	runningPodList, err := kubeletClient.GetPodList()
 	metrics.K8sAPIReqCount.Inc()
 	if err != nil {
-		errMsg := fmt.Errorf("getPodFromAPIByIP: Error retriving the pod with IP %s from the k8s api %s", IP, err)
+		errMsg := fmt.Errorf("getPodFromAPIByIP: Error retriving the pod with IP %s from the k8s kubelet %s", IP, err)
 		log.Error(errMsg)
 		return nil, errMsg
 	}
 
 	for _, pod := range runningPodList.Items {
-		log.Infof("getPodFromAPIByIP: Found container %s with IP: %s", pod.GetName(), pod.Status.PodIP)
+		log.Infof("getPodFromAPIByIP: kubelet Found container %s with IP: %s", pod.GetName(), pod.Status.PodIP)
 		if pod.Spec.HostNetwork {
 			continue
 		}
 		if pod.Status.PodIP == IP {
-			log.Infof("getPodFromAPIByIP: Returning %s", pod.GetName())
+			log.Infof("getPodFromAPIByIP: kubelet Returning %s", pod.GetName())
 			metrics.K8sAPIReqSuccesCount.Inc()
 			return &pod, nil
 		}
