@@ -146,7 +146,7 @@ func getPodFromAPIByIP(k8s *Client, IP string) (*v1.Pod, error) {
 	}
 
 	for _, pod := range runningPodList.Items {
-		log.Infof("getPodFromAPIByIP: Found container %s", pod.GetName())
+		log.Infof("getPodFromAPIByIP: Found container %s with IP: %s", pod.GetName(), pod.Status.PodIP)
 		if pod.Spec.HostNetwork {
 			continue
 		}
