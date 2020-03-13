@@ -151,10 +151,8 @@ func getPodFromAPIByIP(k8s *Client, IP string) (*v1.Pod, error) {
 		log.Error(errMsg)
 		return nil, errMsg
 	}
-	if runningPodList.Size() == 0 {
-		msgError := fmt.Errorf("getPodFromAPIByIP: No container found")
-		return nil, msgError
-	}
+
+	log.Infof("getPodFromAPIByIP: found %d pod(s)", runningPodList.Size())
 
 	for _, pod := range runningPodList.Items {
 		log.Infof("Found container %s", pod.GetName)
