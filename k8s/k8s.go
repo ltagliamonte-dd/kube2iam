@@ -134,9 +134,9 @@ func (k8s *Client) PodByIP(IP string) (*v1.Pod, error) {
 // If the indexed pods all have HostNetwork = true the function return nil and the error message.
 // If we retrive a running pod that doesn't have HostNetwork = true and it is in Running state will return that.
 func getPodFromAPIByIP(k8s *Client, IP string) (*v1.Pod, error) {
-	log.Infof("getPodFromAPIByIP: Searching for: status.podIP=%s", IP)
+	log.Infof("getPodFromAPIByIP: Searching for: spec.nodeName==%s", k8s.nodeName)
 	runningPodList, err := k8s.CoreV1().Pods("").List(metav1.ListOptions{
-		FieldSelector: selector.OneTermEqualSelector("status.podIP", IP).String(),
+		FieldSelector: "spec.nodeName=" + k8s.nodeName,
 	})
 	metrics.K8sAPIReqCount.Inc()
 	if err != nil {
@@ -146,12 +146,14 @@ func getPodFromAPIByIP(k8s *Client, IP string) (*v1.Pod, error) {
 	}
 
 	for _, pod := range runningPodList.Items {
-		log.Infof("Found container %s", pod.GetName)
+		log.Infof("Found container %s", pod.GetName())
 		if pod.Spec.HostNetwork {
 			continue
 		}
-		metrics.K8sAPIReqSuccesCount.Inc()
-		return &pod, nil
+		if pod.Status.PodIP == IP {
+			metrics.K8sAPIReqSuccesCount.Inc()
+			return &pod, nil
+		}
 	}
 
 	errMsg := fmt.Errorf("more than a pod with the same IP has been indexed, this can happen when pods have hostNetwork: true")
